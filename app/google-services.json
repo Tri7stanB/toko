@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "157363353490",
+    "project_id": "toko-e892e",
+    "storage_bucket": "toko-e892e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:157363353490:android:a19d8673a7b9eac3b3734b",
+        "android_client_info": {
+          "package_name": "com.tbart.toko"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCovUxhQ0_byQ7MKhCbxMEJTPA1kCiddD0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
