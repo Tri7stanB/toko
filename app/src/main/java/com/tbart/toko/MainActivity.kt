@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import com.tbart.toko.ui.theme.TokoTheme
 
@@ -26,17 +28,34 @@ class MainActivity : ComponentActivity() {
 fun MainScreen() {
     var selectedIndex by remember { mutableStateOf(0) }
 
-    val items = listOf("Home", "Profile", "Photo", "Follows")
+    val items = listOf(
+        NavItem("Parcourir", R.drawable.baseline_filter_24),
+        NavItem("Publier", R.drawable.baseline_photo_24),
+        NavItem("Abonnements", R.drawable.baseline_person_add_24),
+        NavItem("Profil", R.drawable.baseline_switch_account_24),
+
+    )
 
     Scaffold(
         bottomBar = {
             NavigationBar {
                 items.forEachIndexed { index, item ->
                     NavigationBarItem(
-                        icon = { /* ici tu peux mettre Icon(...) */ },
-                        label = { Text(item) },
+                        icon = {
+                            Icon(
+                                painter = painterResource(id = item.iconRes),
+                                contentDescription = item.label
+                            )
+                        },
+                        label = { Text(item.label) },
                         selected = selectedIndex == index,
-                        onClick = { selectedIndex = index }
+                        onClick = { selectedIndex = index },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = Color(0xFFFF9800),      // orange
+                            unselectedIconColor = Color.Gray,
+                            selectedTextColor = Color(0xFFFF9800),      // orange
+                            unselectedTextColor = Color.Gray
+                        )
                     )
                 }
             }
@@ -78,3 +97,6 @@ fun DefaultPreview() {
         MainScreen()
     }
 }
+
+data class NavItem(val label: String, val iconRes: Int)
+
