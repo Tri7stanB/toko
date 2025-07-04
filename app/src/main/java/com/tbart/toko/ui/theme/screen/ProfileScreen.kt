@@ -21,25 +21,71 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.input.KeyboardType
 import com.tbart.toko.viewmodel.ProfileUiState
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
-fun ProfileScreen(viewModel: ProfileViewModel = viewModel(), modifier: Modifier = Modifier) {
+fun ProfileScreen(modifier: Modifier = Modifier, viewModel: ProfileViewModel = viewModel()) {
+    val username by viewModel.username.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+
+    // État pour gérer les onglets (seulement en mode déconnecté)
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("Connexion", "Inscription")
 
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .padding(24.dp),
         verticalArrangement = Arrangement.Center
     ) {
-        // Onglets
+        if (username != null) {
+            // Mode connecté
+            ConnectedProfile(username!!, viewModel)
+        } else {
+            // Mode déconnecté
+            DisconnectedProfile(selectedTab, tabs, viewModel) { selectedTab = it }
+        }
+    }
+}
+
+@Composable
+private fun ConnectedProfile(username: String, viewModel: ProfileViewModel) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Text(
+            text = "Bonjour $username !",
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.padding(bottom = 24.dp)
+        )
+
+        Button(
+            onClick = { viewModel.logout() },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer
+            )
+        ) {
+            Text("Se déconnecter")
+        }
+    }
+}
+
+@Composable
+private fun DisconnectedProfile(
+    selectedTab: Int,
+    tabs: List<String>,
+    viewModel: ProfileViewModel,
+    onTabSelected: (Int) -> Unit
+) {
+    Column {
         TabRow(selectedTabIndex = selectedTab) {
             tabs.forEachIndexed { index, title ->
                 Tab(
                     text = { Text(title) },
                     selected = selectedTab == index,
-                    onClick = { selectedTab = index }
+                    onClick = { onTabSelected(index) }
                 )
             }
         }
@@ -48,11 +94,10 @@ fun ProfileScreen(viewModel: ProfileViewModel = viewModel(), modifier: Modifier 
 
         Crossfade(targetState = selectedTab) { tab ->
             when (tab) {
-                0 -> LoginSection(viewModel) { selectedTab = 1 }
-                1 -> RegisterSection(viewModel) { selectedTab = 0 }
+                0 -> LoginSection(viewModel) { onTabSelected(1) }
+                1 -> RegisterSection(viewModel) { onTabSelected(0) }
             }
         }
-
     }
 }
 

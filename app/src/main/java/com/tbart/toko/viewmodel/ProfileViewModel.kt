@@ -10,16 +10,38 @@ import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 
 class ProfileViewModel : ViewModel() {
-
-    private val _message = MutableStateFlow("Bienvenue sur l'accueil")
-    val message: StateFlow<String> = _message
-
     private val auth = FirebaseAuth.getInstance()
+    private val firestore = FirebaseFirestore.getInstance()
+
+    private val _username = MutableStateFlow<String?>(null)
+    val username: StateFlow<String?> = _username
 
     private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Idle)
     val uiState: StateFlow<ProfileUiState> = _uiState
 
-    private val firestore = FirebaseFirestore.getInstance()
+    init {
+        loadCurrentUser()
+    }
+
+    fun logout() {
+        auth.signOut()
+        _username.value = null
+        _uiState.value = ProfileUiState.Idle
+    }
+
+    fun loadCurrentUser() {
+        auth.currentUser?.email?.let { email ->
+            firestore.collection("users")
+                .whereEqualTo("email", email)
+                .limit(1)
+                .get()
+                .addOnSuccessListener { snapshot ->
+                    snapshot.documents.firstOrNull()?.let { doc ->
+                        _username.value = doc.id
+                    }
+                }
+        }
+    }
 
     fun login(email: String, password: String) {
         _uiState.value = ProfileUiState.Loading
@@ -29,23 +51,24 @@ class ProfileViewModel : ViewModel() {
                 auth.signInWithEmailAndPassword(email, password)
                     .addOnCompleteListener { task ->
                         if (task.isSuccessful) {
-                            val userId = auth.currentUser?.uid
-                            if (userId != null) {
-                                firestore.collection("users").document(userId).get()
-                                    .addOnSuccessListener { document ->
-                                        if (document.exists()) {
-                                            val username = document.getString("name") ?: "Inconnu"
-                                            _uiState.value = ProfileUiState.Success("Bienvenue $username")
-                                        } else {
-                                            _uiState.value = ProfileUiState.Error("Utilisateur non trouvé dans Firestore.")
-                                        }
+                            loadCurrentUser()
+                            // Recherche par email plutôt que par UID
+                            firestore.collection("users")
+                                .whereEqualTo("email", email)
+                                .limit(1)
+                                .get()
+                                .addOnSuccessListener { querySnapshot ->
+                                    if (!querySnapshot.isEmpty) {
+                                        val document = querySnapshot.documents[0]
+                                        val username = document.getString("username") ?: "Inconnu"
+                                        _uiState.value = ProfileUiState.Success("Bienvenue $username")
+                                    } else {
+                                        _uiState.value = ProfileUiState.Error("Utilisateur non trouvé dans Firestore.")
                                     }
-                                    .addOnFailureListener {
-                                        _uiState.value = ProfileUiState.Error("Erreur Firestore : ${it.message}")
-                                    }
-                            } else {
-                                _uiState.value = ProfileUiState.Error("UID utilisateur introuvable.")
-                            }
+                                }
+                                .addOnFailureListener {
+                                    _uiState.value = ProfileUiState.Error("Erreur Firestore : ${it.message}")
+                                }
                         } else {
                             _uiState.value = ProfileUiState.Error(task.exception?.message ?: "Erreur inconnue")
                         }
@@ -72,7 +95,8 @@ class ProfileViewModel : ViewModel() {
                         val userMap = mapOf(
                             "email" to email,
                             "username" to username,
-                            "createdAt" to FieldValue.serverTimestamp()
+                            "follows" to emptyList<String>(),
+                            "createdAt" to FieldValue.serverTimestamp(),
                         )
                         firestore.collection("users").document(username).set(userMap)
                             .addOnSuccessListener {
