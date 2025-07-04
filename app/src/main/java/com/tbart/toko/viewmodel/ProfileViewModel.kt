@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 
@@ -55,10 +56,10 @@ class ProfileViewModel : ViewModel() {
         }
     }
 
-    fun register(email: String, password: String) {
+    fun register(email: String, password: String, username: String) {
         _uiState.value = ProfileUiState.Loading
 
-        if (email.isBlank() || password.isBlank()) {
+        if (email.isBlank() || password.isBlank() || username.isBlank()) {
             _uiState.value = ProfileUiState.Error("Tous les champs doivent être remplis")
             return
         }
@@ -69,11 +70,13 @@ class ProfileViewModel : ViewModel() {
                     val userId = auth.currentUser?.uid
                     if (userId != null) {
                         val userMap = mapOf(
-                            "email" to email
+                            "email" to email,
+                            "username" to username,
+                            "createdAt" to FieldValue.serverTimestamp()
                         )
                         firestore.collection("users").document(userId).set(userMap)
                             .addOnSuccessListener {
-                                _uiState.value = ProfileUiState.Success("Compte créé avec succès. Bienvenue ")
+                                _uiState.value = ProfileUiState.Success("Compte créé avec succès. Bienvenue $username")
                             }
                             .addOnFailureListener { e ->
                                 _uiState.value = ProfileUiState.Error("Erreur lors de l'enregistrement en base : ${e.message}")
