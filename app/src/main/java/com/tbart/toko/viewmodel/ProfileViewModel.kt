@@ -94,11 +94,11 @@ class ProfileViewModel : ViewModel() {
                     if (userId != null) {
                         val userMap = mapOf(
                             "email" to email,
-                            "username" to username,
+                            "username" to username.lowercase(),
                             "follows" to emptyList<String>(),
                             "createdAt" to FieldValue.serverTimestamp(),
                         )
-                        firestore.collection("users").document(username).set(userMap)
+                        firestore.collection("users").document(username.lowercase()).set(userMap)
                             .addOnSuccessListener {
                                 _uiState.value = ProfileUiState.Success("Compte créé avec succès. Bienvenue $username")
                             }

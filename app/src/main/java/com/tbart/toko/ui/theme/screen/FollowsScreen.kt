@@ -21,7 +21,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 @Composable
 fun FollowsScreen(
     modifier: Modifier = Modifier,
-    currentUserId: String = "karim",
+    currentUserId: String = "",
     viewModel: FollowsViewModel = viewModel()
 ) {
     var searchQuery by remember { mutableStateOf("") }
@@ -39,7 +39,7 @@ fun FollowsScreen(
             value = searchQuery,
             onValueChange = {
                 searchQuery = it
-                viewModel.searchUsers(it)
+                viewModel.searchUsers(it.lowercase())
             },
             label = { Text("Rechercher des utilisateurs") },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
