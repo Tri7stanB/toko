@@ -5,11 +5,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 
 class ProfileViewModel : ViewModel() {
 
-    private val _message = MutableStateFlow("Bienvenue sur le profil")
+    private val _message = MutableStateFlow("Bienvenue sur l'accueil")
     val message: StateFlow<String> = _message
 
     private val auth = FirebaseAuth.getInstance()
@@ -17,19 +18,73 @@ class ProfileViewModel : ViewModel() {
     private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Idle)
     val uiState: StateFlow<ProfileUiState> = _uiState
 
+    private val firestore = FirebaseFirestore.getInstance()
+
     fun login(email: String, password: String) {
         _uiState.value = ProfileUiState.Loading
 
         viewModelScope.launch {
-            auth.signInWithEmailAndPassword(email, password)
-                .addOnCompleteListener { task ->
-                    _uiState.value = if (task.isSuccessful) {
-                        ProfileUiState.Success("Connecté en tant que ${auth.currentUser?.email}")
-                    } else {
-                        ProfileUiState.Error(task.exception?.message ?: "Erreur inconnue")
+            if (email.isNotBlank() && password.isNotBlank()) {
+                auth.signInWithEmailAndPassword(email, password)
+                    .addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            val userId = auth.currentUser?.uid
+                            if (userId != null) {
+                                firestore.collection("users").document(userId).get()
+                                    .addOnSuccessListener { document ->
+                                        if (document.exists()) {
+                                            val username = document.getString("name") ?: "Inconnu"
+                                            _uiState.value = ProfileUiState.Success("Bienvenue $username")
+                                        } else {
+                                            _uiState.value = ProfileUiState.Error("Utilisateur non trouvé dans Firestore.")
+                                        }
+                                    }
+                                    .addOnFailureListener {
+                                        _uiState.value = ProfileUiState.Error("Erreur Firestore : ${it.message}")
+                                    }
+                            } else {
+                                _uiState.value = ProfileUiState.Error("UID utilisateur introuvable.")
+                            }
+                        } else {
+                            _uiState.value = ProfileUiState.Error(task.exception?.message ?: "Erreur inconnue")
+                        }
                     }
-                }
+            } else {
+                _uiState.value = ProfileUiState.Error("Email ou mot de passe vide")
+            }
         }
+    }
+
+    fun register(email: String, password: String) {
+        _uiState.value = ProfileUiState.Loading
+
+        if (email.isBlank() || password.isBlank()) {
+            _uiState.value = ProfileUiState.Error("Tous les champs doivent être remplis")
+            return
+        }
+
+        auth.createUserWithEmailAndPassword(email, password)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val userId = auth.currentUser?.uid
+                    if (userId != null) {
+                        val userMap = mapOf(
+                            "email" to email
+                        )
+                        firestore.collection("users").document(userId).set(userMap)
+                            .addOnSuccessListener {
+                                _uiState.value = ProfileUiState.Success("Compte créé avec succès. Bienvenue ")
+                            }
+                            .addOnFailureListener { e ->
+                                _uiState.value = ProfileUiState.Error("Erreur lors de l'enregistrement en base : ${e.message}")
+                            }
+                    } else {
+                        _uiState.value = ProfileUiState.Error("UID utilisateur introuvable après création")
+                    }
+                } else {
+                    _uiState.value = ProfileUiState.Error(task.exception?.message ?: "Erreur inconnue lors de la création du compte")
+                }
+            }
     }
 }
 

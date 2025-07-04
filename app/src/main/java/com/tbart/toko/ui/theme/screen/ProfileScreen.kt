@@ -54,11 +54,35 @@ fun ProfileScreen(viewModel: ProfileViewModel = viewModel(), modifier: Modifier 
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Button(
-            onClick = { viewModel.login(email, password) },
-            modifier = Modifier.fillMaxWidth()
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text("Se connecter")
+            Button(
+                onClick = {
+                    if (email.isNotBlank() && password.isNotBlank()) {
+                        viewModel.login(email, password)
+                    } else {
+                        println("Email ou mot de passe vide")
+                    }
+                },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("Se connecter")
+            }
+
+            Button(
+                onClick = {
+                    if (email.isNotBlank() && password.isNotBlank()) {
+                        viewModel.register(email, password)
+                    } else {
+                        println("Email ou mot de passe vide")
+                    };
+                },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("S'inscrire")
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))

@@ -82,3 +82,5 @@ dependencies {
     implementation("androidx.compose.foundation:foundation:1.4.3")
 
 }
+
+apply(plugin = "com.google.gms.google-services")
