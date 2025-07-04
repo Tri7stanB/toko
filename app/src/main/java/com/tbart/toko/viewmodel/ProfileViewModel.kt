@@ -74,7 +74,7 @@ class ProfileViewModel : ViewModel() {
                             "username" to username,
                             "createdAt" to FieldValue.serverTimestamp()
                         )
-                        firestore.collection("users").document(userId).set(userMap)
+                        firestore.collection("users").document(username).set(userMap)
                             .addOnSuccessListener {
                                 _uiState.value = ProfileUiState.Success("Compte créé avec succès. Bienvenue $username")
                             }
